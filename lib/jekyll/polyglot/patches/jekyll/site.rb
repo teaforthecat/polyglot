@@ -3,7 +3,7 @@ require 'etc'
 include Process
 module Jekyll
   class Site
-    attr_reader :default_lang, :languages, :exclude_from_localization, :lang_vars
+    attr_reader :default_lang, :languages, :exclude_from_localization, :lang_vars, :add_default_lang_dir
     attr_accessor :file_langs, :active_lang
 
     def prepare
@@ -11,6 +11,7 @@ module Jekyll
       fetch_languages
       @parallel_localization = config.fetch('parallel_localization', true)
       @lang_from_path = config.fetch('lang_from_path', false)
+      @add_default_lang_dir = config.fetch('add_default_lang_dir', false) # false for backwards compat.
       @exclude_from_localization = config.fetch('exclude_from_localization', []).map do |e|
         if File.directory?(e) && e[-1] != '/'
           "#{e}/"
@@ -85,7 +86,15 @@ module Jekyll
         config[v] = @active_lang
       end
       if @active_lang == @default_lang
-      then process_default_language
+        process_default_language
+        @old_default_lang = @default_lang
+        # a default lang is required to build for somereason, I'm not sure why
+        # option 1: look into why, and if there is a way to build without a default_lang
+        # option 2: use another lang as a surrogate default_lang just while building this lang in a nested directory
+        # this technique allows opting into the default lang AFTER being rewritten to another lang based on location
+        @default_lang = (languages - [@default_lang]).first
+        process_active_language if add_default_lang_dir
+        @default_lang = @old_default_lang
       else
         process_active_language
       end

@@ -9,6 +9,12 @@ def hook_coordinate(site)
   # Favour active_lang first, then default_lang, then any non-language-specific data.
   # See: https://www.ruby-forum.com/topic/142809
   merger = proc { |key, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : v2 }
+  if site.data.include?("locales") && site.data["locales"][site.default_lang]
+    site.data = site.data.merge(site.data["locales"][site.default_lang], &merger)
+  end
+  if site.data.include?("locales") && site.data["locales"][site.active_lang]
+    site.data = site.data.merge(site.data["locales"][site.active_lang], &merger)
+  end
   if site.data.include?(site.default_lang)
     site.data = site.data.merge(site.data[site.default_lang], &merger)
   end
